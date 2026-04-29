@@ -8,12 +8,31 @@ from app.api.v1.ai import router as ai_router
 from app.api.v1.files import router as files_router
 from app.api.v1.rag import router as rag_router
 from app.api.v1.health import router as health_router
+import asyncio
+import logging
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title=settings.APP_NAME)
 
 @app.on_event("startup")
 async def startup():
-    await create_tables()
+    max_retries = 5
+    retry_delay = 2
+    
+    for attempt in range(max_retries):
+        try:
+            await create_tables()
+            logger.info("Database tables created successfully")
+            break
+        except Exception as e:
+            if attempt < max_retries - 1:
+                logger.warning(f"Database connection failed (attempt {attempt + 1}/{max_retries}): {e}")
+                logger.info(f"Retrying in {retry_delay} seconds...")
+                await asyncio.sleep(retry_delay)
+            else:
+                logger.error(f"Failed to create database tables after {max_retries} attempts")
+                raise
 
 app.include_router(health_router)
 app.include_router(auth_router)

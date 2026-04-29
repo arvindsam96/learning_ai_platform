@@ -1,23 +1,38 @@
 services:
   api:
     build: .
-    env_file: .env
+    env_file: .env.docker
     ports:
       - "8000:8000"
     volumes:
       - ./uploads:/app/uploads
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    # For local development, use host networking to access Ollama
+    # network_mode: host (uncomment if needed for Ollama)
+    environment:
+      - ENV=docker
+      - UPLOAD_DIR=/app/uploads
   worker:
     build: .
-    env_file: .env
+    env_file: .env.docker
     command: celery -A app.workers.tasks worker --loglevel=info
     volumes:
       - ./uploads:/app/uploads
     depends_on:
-      - redis
-      - db
+      redis:
+        condition: service_started
+      db:
+        condition: service_healthy
   db:
     image: postgres:16
     environment:
@@ -28,6 +43,11 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d appdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
   redis:
     image: redis:7
     ports:

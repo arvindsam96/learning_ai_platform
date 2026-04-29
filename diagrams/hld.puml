@@ -1,0 +1,47 @@
+@startuml HLD
+skinparam backgroundColor #FEFEFE
+skinparam componentStyle uml2
+
+component "User/Client" as A
+component "FastAPI API Server" as B
+component "Authentication & User Management" as C
+component "AI Chat Service" as D
+component "File Upload & Management" as E
+component "RAG Query Service" as F
+component "Admin Dashboard" as G
+component "LLM Providers" as H
+component "OpenAI" as I
+component "Anthropic" as J
+component "Google Gemini" as K
+component "Ollama" as L
+component "S3 File Storage" as M
+component "Pinecone Vector Database" as N
+component "PostgreSQL Database" as O
+component "Redis Cache" as P
+component "Celery Workers" as Q
+component "Usage Logging" as R
+
+A --> B
+B --> C
+B --> D
+B --> E
+B --> F
+B --> G
+D --> H
+H --> I
+H --> J
+H --> K
+H --> L
+E --> M
+F --> N
+C --> O
+D --> O
+E --> O
+F --> O
+B --> P
+Q --> O
+Q --> N
+Q --> M
+Q --> R
+R --> O
+@enduml

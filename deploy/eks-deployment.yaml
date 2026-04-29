@@ -1,0 +1,156 @@
+# EKS Cluster Configuration (for future use)
+# This file contains Kubernetes manifests for EKS deployment
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: learning-ai-platform-app
+  namespace: default
+  labels:
+    app: learning-ai-platform
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: learning-ai-platform
+  template:
+    metadata:
+      labels:
+        app: learning-ai-platform
+    spec:
+      containers:
+      - name: app
+        image: YOUR_ECR_REPO_URI:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: ENV
+          value: "production"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: database_url
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: redis_url
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: secret_key
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: openai_api_key
+        - name: S3_BUCKET_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: s3_bucket_name
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      serviceAccountName: app-service-account
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: learning-ai-platform-service
+  namespace: default
+spec:
+  selector:
+    app: learning-ai-platform
+  ports:
+    - port: 8000
+      targetPort: 8000
+  type: ClusterIP
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: learning-ai-platform-ingress
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: learning-ai-platform-service
+            port:
+              number: 8000
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: default
+data:
+  s3_bucket_name: "your-s3-bucket-name"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-secrets
+  namespace: default
+type: Opaque
+data:
+  # Base64 encoded values - replace with actual secrets
+  database_url: "cG9zdGdyZXM..."
+  redis_url: "cmVkaXM..."
+  secret_key: "eW91ci1zZWNyZXQ..."
+  openai_api_key: "c2st..."
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: app-service-account
+  namespace: default
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::YOUR_ACCOUNT_ID:role/learning-ai-platform-eks-role
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+kind: ClusterRoleBinding
+metadata:
+  name: app-service-account-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: app-service-account-role
+subjects:
+- kind: ServiceAccount
+  name: app-service-account
+  namespace: default

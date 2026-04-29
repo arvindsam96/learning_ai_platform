@@ -5,6 +5,7 @@ class RAGQueryRequest(BaseModel):
     provider: str | None = None
     model: str | None = None
     top_k: int = Field(default=5, ge=1, le=20)
+    include_web_search: bool = False
 
 class RAGQueryResponse(BaseModel):
     answer: str

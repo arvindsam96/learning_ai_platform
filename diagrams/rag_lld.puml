@@ -1,0 +1,25 @@
+@startuml RAG Service Class Diagram
+class RAGService {
+    +query(request: RAGQueryRequest)
+    -_embed_query(query: str)
+    -_search_vectors(embedding)
+    -_generate_response(query, context)
+}
+class EmbeddingsService {
+    +generate_embedding(text: str)
+}
+class PineconeClient {
+    +upsert(vectors)
+    +query(embedding)
+}
+class Chunker {
+    +chunk_document(document: str)
+}
+class Parser {
+    +parse_file(file)
+}
+RAGService --> EmbeddingsService
+RAGService --> PineconeClient
+RAGService --> AIService
+Chunker --> Parser
+@enduml

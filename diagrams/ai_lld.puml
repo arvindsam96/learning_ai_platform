@@ -1,0 +1,36 @@
+@startuml AI Service Class Diagram
+class AIService {
+    +chat(request: ChatRequest)
+    -_get_provider(provider: str)
+}
+class ProviderFactory {
+    +get_provider(provider_name: str)
+}
+class BaseProvider {
+    <<interface>>
+    +chat(messages: list)
+    +get_model()
+}
+class OpenAIProvider {
+    +chat(messages: list)
+    -client: OpenAI
+}
+class AnthropicProvider {
+    +chat(messages: list)
+    -client: Anthropic
+}
+class GeminiProvider {
+    +chat(messages: list)
+    -client: GenerativeModel
+}
+class OllamaProvider {
+    +chat(messages: list)
+    -client: Client
+}
+AIService --> ProviderFactory
+ProviderFactory --> BaseProvider
+BaseProvider <|-- OpenAIProvider
+BaseProvider <|-- AnthropicProvider
+BaseProvider <|-- GeminiProvider
+BaseProvider <|-- OllamaProvider
+@enduml
